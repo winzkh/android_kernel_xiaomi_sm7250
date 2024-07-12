@@ -1,0 +1,36 @@
+
+name: "Build kernel."              # Description of the workflow.
+on:
+  push:
+    branches: 14.0                                    # Branch to build.
+  workflow_dispatch:                                  # Allow to manually trigger workflow.
+jobs:
+  build:
+    name: "Build kernel"
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Checkout kernel source"                  # Clone the kernel source.
+      uses: actions/checkout@v2
+    - name: "Checkout zipper"                         # (OPTIONAL) Clone the AnyKernel3 template.
+      uses: actions/checkout@v2
+      with:
+        repository: lemniskett/AnyKernel3             # Your own AnyKernel3 repository.
+        path: zipper                                  # Clone to path "zipper", REQUIRED.
+    - name: "Android kernel build"                    # Build kernel with lemniskett/android-kernel-actions.
+      uses: alecchangod/android-kernel-actions@master
+      with:
+        arch: arm64                                   # Specify arch
+        compiler: proton-clang/master                               # Specify toolchain to use
+        defconfig: milito.config                  # Specify defconfig to use
+        image: Image.gz                               # Specify final build file
+    - name: Release build
+      uses: softprops/action-gh-release@v1
+      with:
+        files: arch/arm/boot/*
+        name: milito-${{ github.run_id }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          Device: sm7250
+          Target: boot.img
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
